@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PROJECT : PETA KONSEP INTERAKTIF - STOIKIOMETRI</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #d9f0fe; /* Warna latar belakang luar kanvas */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Mencegah scroll body luar */
+            font-family: sans-serif;
+            box-shadow: none; /* Pastikan tidak ada shading luar */
+        }
+        #panggung-interaktif {
+            position: relative;
+            width: 100%;
+            max-width: 1920px; /* Ukuran gambar asli untuk rescaling */
+            aspect-ratio: 16 / 9; /* Memaksa rasio aspek 16:9 */
+            background-color: #d9f0fe; /* Menyatukan warna jika ada celah */
+            box-shadow: none; /* Hilangkan shading luar */
+            cursor: pointer;
+            user-select: none; /* Mencegah pemilihan teks pada gambar */
+        }
+        .slide-interaktif {
+            display: none; /* Sembunyikan semua secara default */
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            box-shadow: none; /* Hilangkan shading luar */
+        }
+        .slide-interaktif.aktif {
+            display: block; /* Tampilkan slide yang aktif */
+        }
+        .gambar-peta-konsep {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Memastikan seluruh gambar terlihat tanpa terpotong */
+            box-shadow: none; /* Hilangkan shading luar */
+        }
+    </style>
+</head>
+<body onload="initInteractiveMap()">
+
+    <div id="panggung-interaktif">
+        
+        <div id="slide-utama" class="slide-interaktif aktif">
+            <img src="slidemain.png" alt="slidemain: Stoikiometri Utama" class="gambar-peta-konsep">
+        </div>
+        
+        <div id="slide-depan" class="slide-interaktif">
+            <img src="slidefront.png" alt="slidefront: Peta Konsep Detail" class="gambar-peta-konsep">
+        </div>
+        
+        <div id="slide-subup" class="slide-interaktif">
+            <img src="slidesubup.png" alt="slidesubup: Detail Konsep Mol" class="gambar-peta-konsep">
+        </div>
+        
+        <div id="slide-subdown" class="slide-interaktif">
+            <img src="slidesubdown.png" alt="slidesubdown: Detail Pereaksi Pembatas" class="gambar-peta-konsep">
+        </div>
+        
+    </div>
+
+    <script>
+        // Mendapatkan referensi ke slide-slide
+        const slides = {
+            utama: document.getElementById('slide-utama'),
+            depan: document.getElementById('slide-depan'),
+            subup: document.getElementById('slide-subup'),
+            subdown: document.getElementById('slide-subdown')
+        };
+        // Slide yang aktif saat ini (id slide)
+        let slideAktifId = 'utama';
+
+        // Fungsi untuk menampilkan slide tertentu
+        function showSlide(slideId) {
+            // Sembunyikan semua slide
+            for (const key in slides) {
+                slides[key].classList.remove('aktif');
+            }
+            // Tampilkan slide yang diminta
+            slides[slideId].classList.add('aktif');
+            slideAktifId = slideId;
+        }
+
+        // Fungsi untuk menangani klik pada panggung
+        function handleStageClick(event) {
+            const panggung = document.getElementById('panggung-interaktif');
+            const rect = panggung.getBoundingClientRect();
+            // Koordinat klik relatif terhadap panggung
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            // Hitung persentase posisi klik
+            const xPercent = (x / rect.width) * 100;
+            const yPercent = (y / rect.height) * 100;
+
+            // Petakan persentase ke grid A1-P9 (16 horizontal, 9 vertikal)
+            // Kolom (x) A-P (1-16): 100 / 16 = 6.25% per kolom
+            const col = Math.ceil(xPercent / 6.25);
+            // Baris (y) 1-9: 100 / 9 = 11.11...% per baris
+            const row = Math.ceil(yPercent / (100 / 9));
+
+            console.log(`Klik di grid: Kolom ${col}, Baris ${row}`);
+
+            handleNavigation(col, row);
+        }
+
+        // Fungsi logika navigasi berdasarkan slide aktif dan koordinat klik
+        function handleNavigation(col, row) {
+            if (slideAktifId === 'utama') {
+                // slidemain: Klik a1-d9 (col 1-4) -> slidefront, e1-p5 (col 5-16, row 1-5) -> slidesubup, e6-p9 (col 5-16, row 6-9) -> slidesubdown
+                if (col <= 4) { // a1-d9
+                    showSlide('depan');
+                } else if (col >= 5 && row <= 5) { // e1-p5
+                    showSlide('subup');
+                } else if (col >= 5 && row >= 6) { // e6-p9
+                    showSlide('subdown');
+                }
+            } else if (slideAktifId === 'depan') {
+                // slidefront: Klik a1-e9 (col 1-5) -> slidemain, f1-p5 (col 6-16, row 1-5) -> slidesubup, f6-p9 (col 6-16, row 6-9) -> slidesubdown
+                if (col <= 5) { // a1-e9
+                    showSlide('utama');
+                } else if (col >= 6 && row <= 5) { // f1-p5
+                    showSlide('subup');
+                } else if (col >= 6 && row >= 6) { // f6-p9
+                    showSlide('subdown');
+                }
+            } else if (slideAktifId === 'subup' || slideAktifId === 'subdown') {
+                // slidesubup & slidesubdown: Klik a1-g9 (col 1-7) -> slidefront, h1-p9 (col 8-16) -> slidemain
+                if (col <= 7) { // a1-g9
+                    showSlide('depan');
+                } else if (col >= 8) { // h1-p9
+                    showSlide('utama');
+                }
+            }
+        }
+
+        // Inisialisasi peta interaktif
+        function initInteractiveMap() {
+            const panggung = document.getElementById('panggung-interaktif');
+            // Tambahkan event listener klik pada panggung
+            panggung.addEventListener('click', handleStageClick);
+        }
+    </script>
+</body>
+</html>
